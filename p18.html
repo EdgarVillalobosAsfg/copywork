@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy Work Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .original-text {
+            color: #000; 
+            white-space: pre-wrap;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 10px;
+            margin: 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            width: 100%;
+            height: 150px;
+            resize: vertical;
+        }
+        .input-text {
+            margin-top: 20px;
+            color: #000;
+            background: #fff;
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            resize: vertical;
+            outline: none;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .highlight {
+            color: red;
+            font-weight: bold;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        #speedDisplay {
+            margin-left: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Practice Copy Work</h1>
+    <div>
+        <label for="fontSize">Font Size:</label>
+        <select id="fontSize" onchange="updateSettings()">
+            <option value="14px">14px</option>
+            <option value="16px" selected>16px</option>
+            <option value="18px">18px</option>
+            <option value="20px">20px</option>
+        </select>
+
+        <label for="lineHeight">Line Height:</label>
+        <select id="lineHeight" onchange="updateSettings()">
+            <option value="1.2">1.2</option>
+            <option value="1.5" selected>1.5</option>
+            <option value="2">2</option>
+        </select>
+
+        <label for="fontFamily">Font Style:</label>
+        <select id="fontFamily" onchange="updateSettings()">
+            <option value="Arial" selected>Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+        </select>
+
+        <label for="predefinedText">Predefined Texts:</label>
+        <select id="predefinedText" onchange="loadPredefinedText()">
+            <option value="">--Select--</option>
+            <option value="To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them.">Shakespeare Quote</option>
+            <option value="The quick brown fox jumps over the lazy dog multiple times in different scenarios.
+This sentence is often used to test typewriters or keyboards,
+as it contains every letter of the English alphabet.">Typing Practice</option>
+            <option value="Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.">Lorem Ipsum</option>
+        </select>
+
+        <label for="toggleSpeech">Enable Speech:</label>
+        <input type="checkbox" id="toggleSpeech" checked>
+    </div>
+
+    <h3>Text to Copy</h3>
+    <textarea id="original" class="original-text" placeholder="Paste your text here..."></textarea>
+
+    <div class="controls">
+        <button onclick="startDictation()">Start Dictation</button>
+        <button onclick="pauseDictation()">Pause Dictation</button>
+        <button onclick="resetAudio()">Reset Audio</button>
+        <label for="speedControl">Speed:</label>
+        <input type="range" id="speedControl" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed()">
+        <span id="speedDisplay">1.0x</span>
+    </div>
+
+    <h3>Your Copy</h3>
+    <textarea id="userInput" class="input-text" placeholder="Write your text here..." oninput="highlightErrors()"></textarea>
+
+    <button onclick="compareText()">Compare</button>
+    <button onclick="resetPractice()">Reset</button>
+    <h3>Comparison Results</h3>
+    <div class="results" id="results"></div>
+    <script>
+        let dictationUtterance;
+        let isDictating = false;
+        let isPaused = false;
+
+        // Update settings like font size, line height, and font family
+        function updateSettings() {
+            const fontSize = document.getElementById('fontSize').value;
+            const lineHeight = document.getElementById('lineHeight').value;
+            const fontFamily = document.getElementById('fontFamily').value;
+
+            document.getElementById('original').style.fontSize = fontSize;
+            document.getElementById('original').style.lineHeight = lineHeight;
+            document.getElementById('original').style.fontFamily = fontFamily;
+
+            document.getElementById('userInput').style.fontSize = fontSize;
+            document.getElementById('userInput').style.lineHeight = lineHeight;
+            document.getElementById('userInput').style.fontFamily = fontFamily;
+        }
+
+        // Load predefined text into the "Text to Copy" field
+        function loadPredefinedText() {
+            const predefinedText = document.getElementById('predefinedText').value;
+            if (predefinedText) {
+                document.getElementById('original').value = predefinedText;
+            }
+        }
+
+        // Highlight errors in the user's copy
+        function highlightErrors() {
+            const original = document.getElementById('original').value;
+            const userInput = document.getElementById('userInput').value;
+
+            const originalWords = original.split(/\s+/);
+            const userWords = userInput.split(/\s+/);
+
+            let highlightedText = "";
+            originalWords.forEach((word, index) => {
+                if (word === userWords[index]) {
+                    highlightedText += word + " ";
+                } else {
+                    highlightedText += `<span class='highlight'>${userWords[index] || ""}</span> `;
+                }
+            });
+
+            document.getElementById('results').innerHTML = highlightedText.trim();
+        }
+
+        // Compare the text for errors
+        function compareText() {
+            const original = document.getElementById('original').value.trim();
+            const userInput = document.getElementById('userInput').value.trim();
+            const results = document.getElementById('results');
+            let errors = 0;
+
+            const originalWords = original.split(/\s+/);
+            const userWords = userInput.split(/\s+/);
+            originalWords.forEach((word, index) => {
+                if (word !== userWords[index]) errors++;
+            });
+
+            results.innerHTML = `<p>Total Errors: ${errors}</p>`;
+        }
+
+        // Update speech speed and display it in real time
+        function updateSpeed() {
+            const speed = parseFloat(document.getElementById('speedControl').value);
+            document.getElementById('speedDisplay').textContent = `${speed.toFixed(1)}x`;
+            if (dictationUtterance && isDictating) {
+                window.speechSynthesis.cancel();
+                dictationUtterance.rate = speed;
+                window.speechSynthesis.speak(dictationUtterance);
+            }
+        }
+
+        // Start dictation of the "Text to Copy"
+        function startDictation() {
+            const text = document.getElementById('original').value;
+            if (!text.trim()) return;
+
+            if (isPaused) {
+                window.speechSynthesis.resume();
+                isPaused = false;
+                return;
+            }
+
+            dictationUtterance = new SpeechSynthesisUtterance(text);
+            dictationUtterance.rate = parseFloat(document.getElementById('speedControl').value);
+            dictationUtterance.onend = () => {
+                isDictating = false;
+            };
+            isDictating = true;
+            window.speechSynthesis.speak(dictationUtterance);
+        }
+
+        // Pause the dictation
+        function pauseDictation() {
+            if (isDictating) {
+                window.speechSynthesis.pause();
+                isPaused = true;
+            }
+        }
+
+        // Reset the audio and start dictation from the beginning
+        function resetAudio() {
+            if (dictationUtterance) {
+                window.speechSynthesis.cancel();
+                isPaused = false;
+                isDictating = false;
+                startDictation();
+            }
+        }
+
+        // Reset the practice session
+        function resetPractice() {
+            document.getElementById('original').value = "";
+            document.getElementById('userInput').value = "";
+            document.getElementById('results').innerHTML = "";
+        }
+    </script>
+</body>
+</html>
